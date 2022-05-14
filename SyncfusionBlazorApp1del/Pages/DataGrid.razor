@@ -1,0 +1,100 @@
+﻿@page "/DataGrid"
+@using SyncfusionBlazorApp1del.Model;
+@using Syncfusion.Blazor.Data;
+@using Syncfusion.Blazor;
+@using System.Collections;
+@using Syncfusion.Blazor.Grids;
+@using SyncfusionBlazorApp1del.Data
+@inject DataGridService data;
+
+<SfGrid @ref="@Grid" TValue="Employee" ID="Grid" AllowSorting="true" Toolbar="@(new List<string>() { "Add", "Edit","Update","Delete","Cancel" ,"PdfExport"})" AllowSelection="true" AllowPdfExport="true" Height="315">
+ 
+<SfDataManager AdaptorInstance="@typeof(CustomAdaptor)" Adaptor="Adaptors.CustomAdaptor"></SfDataManager>
+<GridEditSettings AllowAdding="true" AllowDeleting="true" AllowEditing="true" Mode="EditMode.Normal"></GridEditSettings>
+<GridEvents OnToolbarClick="ToolbarClick" TValue="Employee"></GridEvents>
+  <GridColumns>
+	<GridColumn Field="EmployeeId"  HeaderText="EmployeeId" IsPrimaryKey="true"></GridColumn>
+	<GridColumn Field="Name"  HeaderText="Name" Type="ColumnType.String"></GridColumn>
+	<GridColumn Field="City"  HeaderText="City" Type="ColumnType.String"></GridColumn>
+	<GridColumn Field="Department"  HeaderText="Department" Type="ColumnType.String"></GridColumn>
+	<GridColumn Field="Gender"  HeaderText="Gender" Type="ColumnType.String"></GridColumn>
+  </GridColumns>
+</SfGrid>
+
+@code{
+ 			public class CustomAdaptor : DataAdaptor
+		{
+			public DataGridService data = new DataGridService();
+
+			public override object Read(DataManagerRequest dm, string key = null)
+			{
+							IEnumerable<Employee> DataSource = data.GetAllEmployee().ToList();
+					
+			if (dm.Search != null && dm.Search.Count > 0)
+			{
+				// Searching
+				DataSource = DataOperations.PerformSearching(DataSource, dm.Search);
+			}
+			if (dm.Sorted != null && dm.Sorted.Count > 0)
+			{
+				// Sorting
+				DataSource = DataOperations.PerformSorting(DataSource, dm.Sorted);
+			}
+			if (dm.Where != null && dm.Where.Count > 0)
+			{
+				// Filtering
+				DataSource = DataOperations.PerformFiltering(DataSource, dm.Where, dm.Where[0].Operator);
+			}
+							int count = DataSource.Cast<Employee>().Count();
+						if (dm.Skip != 0)
+			{
+				//Paging
+				DataSource = DataOperations.PerformSkip(DataSource, dm.Skip);
+			}
+			if (dm.Take != 0)
+			{
+				DataSource = DataOperations.PerformTake(DataSource, dm.Take);
+			}
+									return dm.RequiresCounts ? new DataResult() { Result = DataSource, Count = count } : (object)DataSource;
+			}
+		
+						
+			public override object Insert(DataManager dataManager, object value, string key)
+			{
+				data.AddEmployee(value as Employee);
+				return value;
+			}
+			
+			public override object  Update(DataManager dataManager, object value, string keyField, string key)
+			{
+				data.UpdateEmployee(value as Employee);
+				return value;
+			}
+			public override object Remove(DataManager dataManager, object value, string keyField, string key)
+            {
+
+                var delData = data.GetAllEmployee().Where(x => x.EmployeeId == (int)value).FirstOrDefault();
+
+                data.DeleteEmployee((int)value);
+                return delData;
+
+            }
+
+
+  }
+
+			
+	SfGrid<Employee> Grid;
+
+    public void ToolbarClick(Syncfusion.Blazor.Navigations.ClickEventArgs args)
+{
+    if (args.Item.Id == "Grid_pdfexport")
+  {
+    this.Grid.PdfExport();
+  }
+}
+}
+ 
+
+
+
